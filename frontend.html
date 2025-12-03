@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>AI-Powered Ticket Classifier & Support Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  </head>
+  <body class="bg-slate-950 text-slate-100" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); min-height: 100vh;">
+    <div id="root" class="min-h-screen flex items-stretch justify-center px-4 py-8">
+      <!-- React mounts here -->
+    </div>
+
+    <script type="text/babel" data-presets="env,react">
+      const { useState, useEffect } = React;
+
+      const API_BASE = 'http://localhost:4000';
+
+      function TicketForm({ onCreated }) {
+        const [name, setName] = useState('');
+        const [email, setEmail] = useState('');
+        const [description, setDescription] = useState('');
+        const [submitting, setSubmitting] = useState(false);
+        const [error, setError] = useState('');
+
+        const handleSubmit = async (e) => {
+          e.preventDefault();
+          setError('');
+
+          if (!name.trim() || !email.trim() || !description.trim()) {
+            setError('Please fill in name, email and a short description.');
+            return;
+          }
+
+          setSubmitting(true);
+          try {
+            const res = await fetch(API_BASE + '/api/tickets', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name, email, description }),
+            });
+
+            if (!res.ok) {
+              const body = await res.json().catch(() => ({}));
+              throw new Error(body.error || 'Could not create ticket.');
+            }
+
+            const created = await res.json();
+            onCreated(created);
+            setName('');
+            setEmail('');
+            setDescription('');
+          } catch (err) {
+            setError(err.message || 'Something went wrong.');
+          } finally {
+            setSubmitting(false);
+          }
+        };
+
+        return (
+          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 shadow-xl shadow-slate-900/60 backdrop-blur">
+            <h2 className="text-lg font-semibold text-slate-50 mb-1">
+              Submit a support ticket
+            </h2>
+            <p className="text-sm text-slate-400 mb-4">
+              Describe your issue in plain language. The system will auto-tag and prioritise it for the team.
+            </p>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full rounded-lg bg-slate-950/60 border border-slate-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/70 focus:border-emerald-500/70"
+                    placeholder="Jane Doe"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full rounded-lg bg-slate-950/60 border border-slate-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/70 focus:border-emerald-500/70"
+                    placeholder="you@company.com"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  Ticket description
+                </label>
+                <textarea
+                  rows="4"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="w-full rounded-lg bg-slate-950/60 border border-slate-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/70 focus:border-emerald-500/70 resize-none"
+                  placeholder="Share what you're running into. Links and plain language are both fine."
+                />
+              </div>
+              {error && (
+                <p className="text-xs text-red-400 bg-red-950/40 border border-red-900/60 rounded-md px-3 py-2">
+                  {error}
+                </p>
+              )}
+              <button
+                type="submit"
+                disabled={submitting}
+                className="inline-flex items-center justify-center rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:bg-emerald-700 px-4 py-2 text-sm font-medium text-slate-950 shadow shadow-emerald-500/40 transition"
+              >
+                {submitting ? 'Classifying…' : 'Submit ticket'}
+              </button>
+            </form>
+          </div>
+        );
+      }
+
+      function TicketRow({ ticket, onSelect }) {
+        return (
+          <tr
+            onClick={() => onSelect(ticket)}
+            className="border-b border-slate-800/80 hover:bg-slate-900/70 cursor-pointer text-sm"
+          >
+            <td className="px-3 py-2 text-slate-300">{ticket.name}</td>
+            <td className="px-3 py-2 text-slate-400 hidden md:table-cell">
+              {ticket.email}
+            </td>
+            <td className="px-3 py-2 max-w-xs truncate text-slate-400">
+              {ticket.description}
+            </td>
+            <td className="px-3 py-2">
+              <span className="inline-flex items-center rounded-full bg-slate-900/80 border border-slate-700/80 px-2 py-0.5 text-[11px] font-medium text-slate-200">
+                {ticket.category}
+              </span>
+            </td>
+            <td className="px-3 py-2">
+              <span
+                className={
+                  'inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ' +
+                  (ticket.priority === 'High'
+                    ? 'bg-red-500/15 text-red-300 border border-red-500/40'
+                    : ticket.priority === 'Low'
+                    ? 'bg-sky-500/10 text-sky-300 border border-sky-500/40'
+                    : 'bg-amber-500/15 text-amber-200 border border-amber-500/40')
+                }
+              >
+                {ticket.priority}
+              </span>
+            </td>
+            <td className="px-3 py-2 text-xs text-slate-500 hidden lg:table-cell">
+              {new Date(ticket.createdAt).toLocaleString()}
+            </td>
+          </tr>
+        );
+      }
+
+      function TicketModal({ ticket, onClose }) {
+        if (!ticket) return null;
+        return (
+          <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 backdrop-blur">
+            <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl shadow-black/60 w-full max-w-xl p-5">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="text-base font-semibold text-slate-50">
+                    Ticket from {ticket.name}
+                  </h3>
+                  <p className="text-xs text-slate-400">{ticket.email}</p>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="text-slate-400 hover:text-slate-100 text-sm"
+                >
+                  Close
+                </button>
+              </div>
+
+              <div className="flex gap-2 mb-4">
+                <span className="inline-flex items-center rounded-full bg-slate-950/80 border border-slate-700/80 px-2 py-0.5 text-[11px] font-medium text-slate-200">
+                  {ticket.category}
+                </span>
+                <span
+                  className={
+                    'inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ' +
+                    (ticket.priority === 'High'
+                      ? 'bg-red-500/15 text-red-300 border border-red-500/40'
+                      : ticket.priority === 'Low'
+                      ? 'bg-sky-500/10 text-sky-300 border border-sky-500/40'
+                      : 'bg-amber-500/15 text-amber-200 border border-amber-500/40')
+                  }
+                >
+                  Priority: {ticket.priority}
+                </span>
+                <span className="inline-flex items-center rounded-full bg-slate-950/80 border border-slate-700/80 px-2 py-0.5 text-[11px] text-slate-300">
+                  {new Date(ticket.createdAt).toLocaleString()}
+                </span>
+              </div>
+
+              <div className="text-sm text-slate-200 whitespace-pre-wrap bg-slate-950/70 border border-slate-800 rounded-xl px-3 py-3">
+                {ticket.description}
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      function Dashboard() {
+        const [tickets, setTickets] = useState([]);
+        const [loading, setLoading] = useState(true);
+        const [error, setError] = useState('');
+        const [search, setSearch] = useState('');
+        const [category, setCategory] = useState('');
+        const [priority, setPriority] = useState('');
+        const [selected, setSelected] = useState(null);
+
+        const fetchTickets = async (filters = {}) => {
+          setLoading(true);
+          setError('');
+          try {
+            const params = new URLSearchParams();
+            if (filters.search) params.set('search', filters.search);
+            if (filters.category) params.set('category', filters.category);
+            if (filters.priority) params.set('priority', filters.priority);
+
+            const url =
+              params.toString().length > 0
+                ? API_BASE + '/api/tickets?' + params.toString()
+                : API_BASE + '/api/tickets';
+
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('Failed to load tickets.');
+            const data = await res.json();
+            setTickets(data.reverse());
+          } catch (err) {
+            setError(err.message || 'Something went wrong while loading tickets.');
+          } finally {
+            setLoading(false);
+          }
+        };
+
+        useEffect(() => {
+          fetchTickets();
+        }, []);
+
+        const handleFilterChange = (updates) => {
+          const next = {
+            search,
+            category,
+            priority,
+            ...updates,
+          };
+          setSearch(next.search);
+          setCategory(next.category);
+          setPriority(next.priority);
+          fetchTickets(next);
+        };
+
+        return (
+          <div className="flex-1 w-full max-w-4xl mx-auto flex flex-col gap-6">
+            <div className="text-center">
+              <h1 className="text-2xl md:text-3xl font-semibold text-slate-50 mb-1 tracking-tight">
+                AI-Powered Ticket Desk
+              </h1>
+              <p className="text-sm md:text-base text-slate-400 max-w-xl mx-auto">
+                Lightweight support inbox that automatically tags new requests by type and urgency.
+              </p>
+            </div>
+
+            <TicketForm
+              onCreated={() => {
+                fetchTickets({ search, category, priority });
+              }}
+            />
+
+            <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 md:p-5 shadow-xl shadow-slate-900/70 backdrop-blur flex flex-col">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3">
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-100">
+                    Inbox
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    {tickets.length === 0
+                      ? 'No tickets yet. Submit one on the left to see the classification in action.'
+                      : tickets.length + ' ticket' + (tickets.length === 1 ? '' : 's') + ' in view.'}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => handleFilterChange({ search: e.target.value })}
+                    placeholder="Search text or email..."
+                    className="rounded-lg bg-slate-950/60 border border-slate-800 px-3 py-1.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/70"
+                  />
+                  <select
+                    value={category}
+                    onChange={(e) => handleFilterChange({ category: e.target.value })}
+                    className="rounded-lg bg-slate-950/60 border border-slate-800 px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500/70"
+                  >
+                    <option value="">All types</option>
+                    <option value="Bug Report">Bug Report</option>
+                    <option value="Feature Request">Feature Request</option>
+                    <option value="Billing Issue">Billing Issue</option>
+                    <option value="Technical Query">Technical Query</option>
+                    <option value="General">General</option>
+                  </select>
+                  <select
+                    value={priority}
+                    onChange={(e) => handleFilterChange({ priority: e.target.value })}
+                    className="rounded-lg bg-slate-950/60 border border-slate-800 px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500/70"
+                  >
+                    <option value="">All priorities</option>
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                  </select>
+                </div>
+              </div>
+
+              {error && (
+                <p className="text-xs text-red-400 bg-red-950/40 border border-red-900/60 rounded-md px-3 py-2 mb-3">
+                  {error}
+                </p>
+              )}
+
+              <div className="relative -mx-4 md:-mx-5 flex-1 overflow-hidden rounded-b-2xl md:rounded-2xl border border-slate-800/80 bg-slate-950/40">
+                {loading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-slate-950/40 z-10">
+                    <div className="h-8 w-8 border-2 border-emerald-400/70 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
+                <div className="max-h-[420px] overflow-auto">
+                  <table className="min-w-full text-left border-collapse text-xs">
+                    <thead className="sticky top-0 bg-slate-950/90 backdrop-blur border-b border-slate-800/90">
+                      <tr className="text-[11px] uppercase tracking-wide text-slate-500">
+                        <th className="px-3 py-2 font-medium">Name</th>
+                        <th className="px-3 py-2 font-medium hidden md:table-cell">
+                          Email
+                        </th>
+                        <th className="px-3 py-2 font-medium">Summary</th>
+                        <th className="px-3 py-2 font-medium">Category</th>
+                        <th className="px-3 py-2 font-medium">Priority</th>
+                        <th className="px-3 py-2 font-medium hidden lg:table-cell">
+                          Created
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tickets.map((t) => (
+                        <TicketRow key={t.id} ticket={t} onSelect={setSelected} />
+                      ))}
+                    </tbody>
+                  </table>
+                  {tickets.length === 0 && !loading && (
+                    <div className="px-4 py-10 text-center text-xs text-slate-500">
+                      Nothing here yet. The moment a ticket comes in, it will be
+                      tagged and show up in this table.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <TicketModal ticket={selected} onClose={() => setSelected(null)} />
+            </div>
+          </div>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<Dashboard />);
+    </script>
+  </body>
+</html>
+
+

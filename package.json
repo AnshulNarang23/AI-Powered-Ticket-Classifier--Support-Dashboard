@@ -1,0 +1,31 @@
+{
+  "name": "ai-powered-ticket-classifier---support-dashboard",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AnshulNarang23/AI-Powered-Ticket-Classifier--Support-Dashboard.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/AnshulNarang23/AI-Powered-Ticket-Classifier--Support-Dashboard/issues"
+  },
+  "homepage": "https://github.com/AnshulNarang23/AI-Powered-Ticket-Classifier--Support-Dashboard#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}
