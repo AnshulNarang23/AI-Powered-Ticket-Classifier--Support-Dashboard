@@ -148,29 +148,6 @@ The server:
 
 ---
 
-## 6. How to talk about this project
 
-You can describe this project in an interview roughly like this:
-
-> I built a small support tool where users can submit tickets and the backend automatically classifies each one by type and urgency. The frontend is a React + Tailwind dashboard that shows all tickets, with filters, search, and a details modal. On the backend I used Node and Express, storing tickets in a JSON file for simplicity. The classifier is a lightweight NLP-style component based on keywords, but I designed the API so it would be easy to plug in a HuggingFace or custom model later.
-
-That hits:
-
-- React, API integration, UI state handling
-- Node/Express API design
-- Text classification and how you’d improve it with a real ML model
-
----
-
-## 7. Possible next improvements
-
-If you want to extend this beyond a one‑day build:
-
-- Replace the keyword classifier with a **HuggingFace** model (e.g. DistilBERT text classifier).
-- Persist tickets to **MongoDB** instead of a JSON file.
-- Add **auth** (simple JWT) for the dashboard view.
-- Add basic charts (e.g. tickets by category over time) with Chart.js or Recharts.
-
-Each of these is easy to layer on top of the current structure.
 
 
